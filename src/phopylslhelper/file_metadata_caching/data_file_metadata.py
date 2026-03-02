@@ -17,7 +17,7 @@ except ImportError:
     MNE_AVAILABLE = False
 
 try:
-    from phoofflineeeganalysis.analysis.xdf_files import LabRecorderXDF
+    from phopymnehelper.xdf_files import LabRecorderXDF
     XDF_AVAILABLE = True
 except ImportError:
     XDF_AVAILABLE = False
