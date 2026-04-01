@@ -77,17 +77,19 @@ class VideoMetadataParser(BaseFileMetadataParser):
 
 
     @classmethod
-    def load_cache(cls, cache_path: Path) -> pd.DataFrame:
+    def load_cache(cls, cache_path: Path, datetime_columns: Optional[List[str]] = None) -> pd.DataFrame:
         """
         Load cached video metadata from CSV file.
 
         Args:
             cache_path: Path to the cache CSV file
-            
+            datetime_columns: Columns to parse as datetime; defaults to video start/end columns.
+
         Returns:
             DataFrame with cached metadata, or empty DataFrame if cache doesn't exist or is corrupted.
         """
-        return super().load_cache(cache_path, datetime_columns=['video_start_datetime', 'video_end_datetime'])
+        cols = datetime_columns if datetime_columns is not None else ['video_start_datetime', 'video_end_datetime']
+        return super().load_cache(cache_path, datetime_columns=cols)
 
 
     @classmethod
