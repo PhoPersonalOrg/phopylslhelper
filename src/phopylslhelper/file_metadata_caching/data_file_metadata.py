@@ -374,6 +374,12 @@ class DataFileMetadataParser(BaseFileMetadataParser):
         
         return df
 
+
+    @classmethod
+    def parse_folder(cls, folder_path: Path, use_cache: bool = True, force_rebuild: bool = False, **kwargs) -> pd.DataFrame:
+        return cls.parse_data_folder(folder_path, use_cache=use_cache, force_rebuild=force_rebuild, **kwargs)
+
+
     @classmethod
     def parse_data_folder(cls, folder_path: Path, data_extensions: List[str] = ['.xdf', '.fif'], use_cache: bool = True, force_rebuild: bool = False) -> pd.DataFrame:
         """

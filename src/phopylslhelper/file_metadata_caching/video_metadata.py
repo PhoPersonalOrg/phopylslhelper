@@ -127,6 +127,11 @@ class VideoMetadataParser(BaseFileMetadataParser):
 
 
     @classmethod
+    def parse_folder(cls, folder_path: Path, use_cache: bool = True, force_rebuild: bool = False, **kwargs) -> pd.DataFrame:
+        return cls.parse_video_folder(folder_path, use_cache=use_cache, force_rebuild=force_rebuild, **kwargs)
+
+
+    @classmethod
     def parse_video_folder(cls, folder_path: Path, video_extensions: List[str] = ['.mp4', '.avi', '.mov', '.mkv', '.wmv'], use_cache: bool = True, force_rebuild: bool = False) -> pd.DataFrame:
         """
         Parse all videos in a folder and return a DataFrame with metadata.
