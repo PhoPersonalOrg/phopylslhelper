@@ -97,7 +97,7 @@ class EasyTimeSyncParsingMixin:
         """Add the current metadata
         """
         phopylslhelper_element = info.desc().append_child('phopylslhelper')
-        phopylslhelper_element.append_child_value("version", "0.1.2")
+        phopylslhelper_element.append_child_value("version", "1.0.3")
         
         ## add a custom timestamp field to the stream info:
         assert (self._arbitrary_time_sync_points is not None), f"_arbitrary_time_sync_points is None"
