@@ -41,7 +41,16 @@ class EasyTimeSyncParsingMixin:
         
     @property
     def arbitrary_time_sync_points(self) -> Dict[str, Tuple[datetime, float]]:
-        return self._arbitrary_time_sync_points        
+        return self._arbitrary_time_sync_points
+
+
+    @property
+    def debug_print(self) -> bool:
+        return getattr(self, '_debug_print', False)
+
+    @debug_print.setter
+    def debug_print(self, value: bool) -> None:
+        self._debug_print = bool(value)
 
 
     def init_EasyTimeSyncParsingMixin(self):
@@ -50,6 +59,7 @@ class EasyTimeSyncParsingMixin:
         # self._recording_start_lsl_local_offset = None
         # self._recording_start_datetime = None
         self._arbitrary_time_sync_points = {}
+        self._debug_print = False
 
         self.capture_stream_start_timestamps()
 
@@ -102,7 +112,7 @@ class EasyTimeSyncParsingMixin:
 
 
     @classmethod
-    def parse_and_add_lsl_outlet_info_from_desc(cls, desc_info_dict: Dict, stream_info_dict: Dict, should_fail_on_missing: bool=True, should_return_datetime_timezone_UTC: bool=False) -> dict:
+    def parse_and_add_lsl_outlet_info_from_desc(cls, desc_info_dict: Dict, stream_info_dict: Dict, should_fail_on_missing: bool=True, should_return_datetime_timezone_UTC: bool=False, debug_print: bool=False) -> dict:
         """Parse the LSL outlet info from the description dictionary
         
         'stream_start_lsl_local_offset_seconds', 'stream_start_datetime'
@@ -120,9 +130,9 @@ class EasyTimeSyncParsingMixin:
         if should_fail_on_missing:
             assert (len(phopylslhelper_dict) > 0)
         else:
-            if (len(phopylslhelper_dict) > 0):
-                print(f'WARN: (len(phopylslhelper_dict){len(phopylslhelper_dict)}')
-                
+            if (len(phopylslhelper_dict) > 0) and debug_print:
+                print(f'WARN: len(phopylslhelper_dict)={len(phopylslhelper_dict)}')
+
         for a_key, a_value in phopylslhelper_dict.items():
             if a_key.endswith('_datetime') and (a_value is not None):
                 a_ts_value = from_readable_dt_str(unwrap_single_element_listlike_if_needed(a_value))
@@ -131,11 +141,13 @@ class EasyTimeSyncParsingMixin:
                     ## Convert to `timezone.utc` instead of `tz_UTC` for compatibility with MNE.
                     a_ts_value = a_ts_value.astimezone(timezone.utc)
                 stream_info_dict[a_key] = a_ts_value
-                print(f'\t FOUND CUSTOM TIMESTAMP SYNC KEY: "{a_key}": {a_ts_value}')
+                if debug_print:
+                    print(f'\t FOUND CUSTOM TIMESTAMP SYNC KEY: "{a_key}": {a_ts_value}')
             elif a_key.endswith('_lsl_local_offset_seconds') and (a_value is not None):
                 a_ts_value = float(unwrap_single_element_listlike_if_needed(a_value))
                 stream_info_dict[a_key] = a_ts_value
-                print(f'\t FOUND CUSTOM TIMESTAMP SYNC KEY: "{a_key}": {a_ts_value}')
+                if debug_print:
+                    print(f'\t FOUND CUSTOM TIMESTAMP SYNC KEY: "{a_key}": {a_ts_value}')
 
         # assert 'recording_start_lsl_local_offset_seconds' in desc_info_dict
 
