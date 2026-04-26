@@ -32,7 +32,7 @@ def _to_utc_datetime(dt: Union[datetime, pd.Timestamp]) -> datetime:
     Naive inputs are interpreted as local display timezone.
     """
     dt_py = dt.to_pydatetime() if isinstance(dt, pd.Timestamp) else dt
-    if dt_py.tzinfo is None:
+    if (not hasattr(dt_py, 'tzinfo')) or (getattr(dt_py, 'tzinfo', None) is None):
         dt_py = dt_py.replace(tzinfo=DISPLAY_TIMEZONE)
     return dt_py.astimezone(timezone.utc)
 
