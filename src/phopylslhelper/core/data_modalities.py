@@ -29,12 +29,12 @@ class DataModalityType(Enum):
 
     @classmethod
     def get_stream_name_to_modality_dict(cls) -> Dict:
-        stream_name_to_modality_dict = {'Epoc X': cls.EEG, 'Epoc X Motion':cls.MOTION, 'Epoc X eQuality':None, 'TextLogger': cls.PHO_LOG_TO_LSL, 'EventBoard': cls.PHO_LOG_TO_LSL}
+        stream_name_to_modality_dict = {'Epoc X': cls.EEG, 'Epoc X Motion':cls.MOTION, 'Epoc X eQuality':None, 'TextLogger': cls.PHO_LOG_TO_LSL, 'EventBoard': cls.PHO_LOG_TO_LSL, 'SeqDebugText': cls.PHO_LOG_TO_LSL}
         return stream_name_to_modality_dict
 
 
 lab_recorder_to_mne_to_type_dict = {'EEG':'eeg', 'ACC':'eeg', 'GYRO':'eeg', 'RAW': 'eeg'} # 'RAW' for eeg quality
-stream_name_to_modality_dict = {'Epoc X': DataModalityType.EEG, 'Epoc X Motion':DataModalityType.MOTION, 'Epoc X eQuality':None, 'TextLogger': DataModalityType.PHO_LOG_TO_LSL, 'EventBoard': DataModalityType.PHO_LOG_TO_LSL}
+stream_name_to_modality_dict = {'Epoc X': DataModalityType.EEG, 'Epoc X Motion':DataModalityType.MOTION, 'Epoc X eQuality':None, 'TextLogger': DataModalityType.PHO_LOG_TO_LSL, 'EventBoard': DataModalityType.PHO_LOG_TO_LSL, 'SeqDebugText': DataModalityType.PHO_LOG_TO_LSL}
 
 modality_channels_dict = {'EEG': ['AF3', 'F7', 'F3', 'FC5', 'T7', 'P7', 'O1', 'O2', 'P8', 'T8', 'FC6', 'F4', 'F8', 'AF4'],
                         'MOTION': ['AccX', 'AccY', 'AccZ', 'GyroX', 'GyroY', 'GyroZ'],
