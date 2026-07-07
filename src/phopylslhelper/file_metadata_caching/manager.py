@@ -19,7 +19,7 @@ class BaseFileMetadataManager:
         from phopylslhelper.file_metadata_caching.video_metadata import VideoMetadataParser
         from phopylslhelper.file_metadata_caching.file_metadata import BaseFileMetadataParser
 
-        video_manager: BaseFileMetadataManager = BaseFileMetadataManager(parse_folders=[Path("M:/ScreenRecordings/EyeTrackerVR_Recordings"), Path("M:/ScreenRecordings/REC_continuous_video_recorder")],
+        video_manager: BaseFileMetadataManager = BaseFileMetadataManager(parse_folders=[Path("I:/ScreenRecordings/REC_continuous_video_recorder"), Path("M:/ScreenRecordings/EyeTrackerVR_Recordings"), Path("M:/ScreenRecordings/REC_continuous_video_recorder")],
                                                                         parsers={'video': VideoMetadataParser},
         )
         video_manager.metadata_df
@@ -52,6 +52,8 @@ class BaseFileMetadataManager:
             return pd.DataFrame()
         # Sort by columns: 'video_start_datetime' (descending), 'video_end_datetime' (descending)
         df = pd.concat(dfs, ignore_index=True).sort_values(['video_start_datetime', 'video_end_datetime'], ascending=[False, False])
+        if 'video_duration' not in df.columns:
+            return df
         # Filter rows based on column: 'video_duration'
         df = df[df['video_duration'] > 5]
         return df
@@ -61,6 +63,8 @@ class BaseFileMetadataManager:
     def metadata_df(self) -> pd.DataFrame:
         """Only videos that aren't still recording or invalid."""
         df = self.unfiltered_metadata_df
+        if df.empty or 'video_duration' not in df.columns:
+            return df
         # Filter rows based on column: 'video_duration'
         df = df[df['video_duration'] > 5]
         return df
@@ -70,7 +74,9 @@ class BaseFileMetadataManager:
     def currently_recording_videos_metadata_df(self) -> pd.DataFrame:
         """All videos that are still recording."""
         df = self.unfiltered_metadata_df
-        df = df[np.logical_and((df['video_duration'] == 0), (df['video_start_datetime'] == df['video_end_datetime']))]
+        if df.empty or 'video_duration' not in df.columns:
+            return df
+        df = df[(df['video_duration'] == 0) & (df['video_start_datetime'] == df['video_end_datetime'])]
         return df
 
 
@@ -79,7 +85,10 @@ class BaseFileMetadataManager:
 
 
     def get_most_recent_video_paths(self, max_num_videos: int = 10) -> List[Path]:
-        return self.get_most_recent_videos_df(max_num_videos=max_num_videos)['video_file_path'].tolist()
+        df = self.get_most_recent_videos_df(max_num_videos=max_num_videos)
+        if df.empty or 'video_file_path' not in df.columns:
+            return []
+        return df['video_file_path'].tolist()
 
 
 

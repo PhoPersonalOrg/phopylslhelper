@@ -230,7 +230,7 @@ class DataFileMetadataParser(BaseFileMetadataParser):
         
         # Load existing cache if enabled and not forcing rebuild
         cached_df = pd.DataFrame()
-        if use_cache and not force_rebuild:
+        if use_cache and (not force_rebuild):
             cached_df = cls.load_cache(cache_path, datetime_columns=['start_datetime'])
         
         # Build dictionary of cached entries by file path
@@ -335,7 +335,7 @@ class DataFileMetadataParser(BaseFileMetadataParser):
             # No valid files found - clear cache if it exists
             if cache_path.exists() and use_cache:
                 try:
-                    cache_path.unlink()
+                    cache_path.unlink() ## delete the cache file (it's empty anyway)
                 except Exception:
                     pass
             return pd.DataFrame()
