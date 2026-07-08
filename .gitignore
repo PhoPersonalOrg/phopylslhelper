@@ -1,3 +1,6 @@
 **/__pycache__
 **/desktop.ini
 .idea
+
+# uv-deps-switcher
+**/templating/uv_deps_switcher/backups
