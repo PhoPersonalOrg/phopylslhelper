@@ -106,9 +106,28 @@ class SingletonInstanceMixin:
 
         # Ensure lock released on normal exit
         atexit.register(self.release_singleton_lock)
-        # Ensure lock released on Ctrl+C / termination
-        signal.signal(signal.SIGTERM, lambda *_: self.release_singleton_lock() or sys.exit(0))
-        signal.signal(signal.SIGINT,  lambda *_: self.release_singleton_lock() or sys.exit(0))
+        # Prefer on_closing so open XDF files get footers; fall back to lock release.
+        signal.signal(signal.SIGTERM, self._handle_termination_signal)
+        signal.signal(signal.SIGINT, self._handle_termination_signal)
+
+    def _handle_termination_signal(self, signum, frame):
+        """SIGINT/SIGTERM: run on_closing when available so recordings close cleanly."""
+        try:
+            on_closing = getattr(self, "on_closing", None)
+            root = getattr(self, "root", None)
+            if callable(on_closing) and root is not None:
+                try:
+                    root.after(0, on_closing)
+                    return
+                except Exception:
+                    pass
+            if callable(on_closing):
+                on_closing()
+                return
+        except Exception as e:
+            print(f"Error in termination handler: {e}")
+        self.release_singleton_lock()
+        sys.exit(0)
 
 
 

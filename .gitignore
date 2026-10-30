@@ -4,3 +4,4 @@
 
 # uv-deps-switcher
 **/templating/uv_deps_switcher/backups
+.coverage
