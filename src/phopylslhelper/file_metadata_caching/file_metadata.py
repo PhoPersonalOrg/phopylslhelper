@@ -186,63 +186,6 @@ class BaseFileMetadataParser:
 
 
     @classmethod
-    def _path_under_excluded(cls, file_path: Path, exclude_dirs: Optional[List[Path]]) -> bool:
-        """True when *file_path* is inside any excluded directory or a ``_DUP`` folder."""
-        try:
-            resolved = file_path.resolve()
-        except OSError:
-            resolved = file_path
-        if DUP_DIR_NAME in resolved.parts:
-            return True
-        if not exclude_dirs:
-            return False
-        for excl in exclude_dirs:
-            try:
-                excl_resolved = Path(excl).resolve()
-            except OSError:
-                excl_resolved = Path(excl)
-            try:
-                resolved.relative_to(excl_resolved)
-                return True
-            except ValueError:
-                continue
-            ## END try relative_to....
-        ## END for excl in exclude_dirs....
-
-        return False
-
-
-    @classmethod
-    def _collect_matching_files(cls, folder_path: Path, included_file_extensions: List[str], recursive: bool = False, exclude_dirs: Optional[List[Path]] = None) -> List[Path]:
-        """Collect files matching extensions; optionally recursive; skip excludes and ``_DUP``."""
-        folder_path = Path(folder_path)
-        seen: set[Path] = set()
-        files: List[Path] = []
-        globber = folder_path.rglob if recursive else folder_path.glob
-        for ext in included_file_extensions:
-            patterns = (f"*{ext}", f"*{ext.upper()}")
-            for pattern in patterns:
-                for p in globber(pattern):
-                    if not p.is_file():
-                        continue
-                    try:
-                        key = p.resolve()
-                    except OSError:
-                        key = p
-                    if key in seen:
-                        continue
-                    if cls._path_under_excluded(p, exclude_dirs):
-                        continue
-                    seen.add(key)
-                    files.append(p)
-                ## END for p in globber(pattern)....
-            ## END for pattern in patterns....
-        ## END for ext in included_file_extensions....
-
-        return files
-
-
-    @classmethod
     def parse_filesystem_folder(cls, folder_path: Path, included_file_extensions: List[str], use_cache: bool = True, force_rebuild: bool = False, cache_filename: str = "_metadata_cache.csv", path_column: str = "file_path", start_datetime_column: str = "start_datetime", end_datetime_column: str = "end_datetime", duration_metadata_key: str = "duration", recursive: bool = False, exclude_dirs: Optional[List[Path]] = None) -> pd.DataFrame:
         """
         Parse all files in a folder and return a DataFrame with metadata.
@@ -266,6 +209,59 @@ class BaseFileMetadataParser:
             keys from extract_file_metadata, and cache_file_size, cache_file_mtime.
             Sorted by start_datetime_column.
         """
+        def _subfn_path_under_excluded(file_path: Path, exclude_dirs: Optional[List[Path]]) -> bool:
+            """True when *file_path* is inside any excluded directory or a ``_DUP`` folder."""
+            try:
+                resolved = file_path.resolve()
+            except OSError:
+                resolved = file_path
+            if DUP_DIR_NAME in resolved.parts:
+                return True
+            if not exclude_dirs:
+                return False
+            for excl in exclude_dirs:
+                try:
+                    excl_resolved = Path(excl).resolve()
+                except OSError:
+                    excl_resolved = Path(excl)
+                try:
+                    resolved.relative_to(excl_resolved)
+                    return True
+                except ValueError:
+                    continue
+                ## END try relative_to....
+            ## END for excl in exclude_dirs....
+
+            return False
+
+        def _subfn_collect_matching_files(folder_path: Path, included_file_extensions: List[str], recursive: bool = False, exclude_dirs: Optional[List[Path]] = None) -> List[Path]:
+            """Collect files matching extensions; optionally recursive; skip excludes and ``_DUP``."""
+            folder_path = Path(folder_path)
+            seen: set[Path] = set()
+            files: List[Path] = []
+            globber = folder_path.rglob if recursive else folder_path.glob
+            for ext in included_file_extensions:
+                patterns = (f"*{ext}", f"*{ext.upper()}")
+                for pattern in patterns:
+                    for p in globber(pattern):
+                        if not p.is_file():
+                            continue
+                        try:
+                            key = p.resolve()
+                        except OSError:
+                            key = p
+                        if key in seen:
+                            continue
+                        if _subfn_path_under_excluded(p, exclude_dirs):
+                            continue
+                        seen.add(key)
+                        files.append(p)
+                    ## END for p in globber(pattern)....
+                ## END for pattern in patterns....
+            ## END for ext in included_file_extensions....
+
+            return files
+
         folder_path = Path(folder_path)
         if not folder_path.exists():
             return pd.DataFrame()
@@ -277,7 +273,7 @@ class BaseFileMetadataParser:
             cached_df = cls.load_cache(cache_path, datetime_columns=[start_datetime_column, end_datetime_column])
         # Find all files matching included_file_extensions
         exclude_list = [Path(p) for p in (exclude_dirs or [])]
-        files = cls._collect_matching_files(folder_path, included_file_extensions, recursive=recursive, exclude_dirs=exclude_list)
+        files = _subfn_collect_matching_files(folder_path, included_file_extensions, recursive=recursive, exclude_dirs=exclude_list)
 
         if not files:
             # No files found - return empty DataFrame and clear cache if it exists
