@@ -7,6 +7,8 @@ from typing import List, Optional, Dict, Any
 import pandas as pd
 from attrs import define
 
+DUP_DIR_NAME = "_DUP"
+
 
 @define(slots=False)
 class BaseFileMetadataParser:
@@ -184,7 +186,64 @@ class BaseFileMetadataParser:
 
 
     @classmethod
-    def parse_filesystem_folder(cls, folder_path: Path, included_file_extensions: List[str], use_cache: bool = True, force_rebuild: bool = False, cache_filename: str = "_metadata_cache.csv", path_column: str = "file_path", start_datetime_column: str = "start_datetime", end_datetime_column: str = "end_datetime", duration_metadata_key: str = "duration") -> pd.DataFrame:
+    def _path_under_excluded(cls, file_path: Path, exclude_dirs: Optional[List[Path]]) -> bool:
+        """True when *file_path* is inside any excluded directory or a ``_DUP`` folder."""
+        try:
+            resolved = file_path.resolve()
+        except OSError:
+            resolved = file_path
+        if DUP_DIR_NAME in resolved.parts:
+            return True
+        if not exclude_dirs:
+            return False
+        for excl in exclude_dirs:
+            try:
+                excl_resolved = Path(excl).resolve()
+            except OSError:
+                excl_resolved = Path(excl)
+            try:
+                resolved.relative_to(excl_resolved)
+                return True
+            except ValueError:
+                continue
+            ## END try relative_to....
+        ## END for excl in exclude_dirs....
+
+        return False
+
+
+    @classmethod
+    def _collect_matching_files(cls, folder_path: Path, included_file_extensions: List[str], recursive: bool = False, exclude_dirs: Optional[List[Path]] = None) -> List[Path]:
+        """Collect files matching extensions; optionally recursive; skip excludes and ``_DUP``."""
+        folder_path = Path(folder_path)
+        seen: set[Path] = set()
+        files: List[Path] = []
+        globber = folder_path.rglob if recursive else folder_path.glob
+        for ext in included_file_extensions:
+            patterns = (f"*{ext}", f"*{ext.upper()}")
+            for pattern in patterns:
+                for p in globber(pattern):
+                    if not p.is_file():
+                        continue
+                    try:
+                        key = p.resolve()
+                    except OSError:
+                        key = p
+                    if key in seen:
+                        continue
+                    if cls._path_under_excluded(p, exclude_dirs):
+                        continue
+                    seen.add(key)
+                    files.append(p)
+                ## END for p in globber(pattern)....
+            ## END for pattern in patterns....
+        ## END for ext in included_file_extensions....
+
+        return files
+
+
+    @classmethod
+    def parse_filesystem_folder(cls, folder_path: Path, included_file_extensions: List[str], use_cache: bool = True, force_rebuild: bool = False, cache_filename: str = "_metadata_cache.csv", path_column: str = "file_path", start_datetime_column: str = "start_datetime", end_datetime_column: str = "end_datetime", duration_metadata_key: str = "duration", recursive: bool = False, exclude_dirs: Optional[List[Path]] = None) -> pd.DataFrame:
         """
         Parse all files in a folder and return a DataFrame with metadata.
         Uses caching to speed up subsequent runs by only processing new or modified files.
@@ -199,6 +258,8 @@ class BaseFileMetadataParser:
             start_datetime_column: Column name for start datetime (default: start_datetime)
             end_datetime_column: Column name for end datetime (default: end_datetime)
             duration_metadata_key: Key in extract_file_metadata result for duration in seconds (default: duration)
+            recursive: If True, search with rglob; otherwise only the folder itself
+            exclude_dirs: Optional directories to skip (also always skips path segments named ``_DUP``)
 
         Returns:
             DataFrame with path_column, start_datetime_column, end_datetime_column,
@@ -215,11 +276,8 @@ class BaseFileMetadataParser:
         if use_cache and not force_rebuild:
             cached_df = cls.load_cache(cache_path, datetime_columns=[start_datetime_column, end_datetime_column])
         # Find all files matching included_file_extensions
-        files = []
-        for ext in included_file_extensions:
-            files.extend(folder_path.glob(f"*{ext}"))
-            files.extend(folder_path.glob(f"*{ext.upper()}"))
-        ## END for ext in included_file_extensions...
+        exclude_list = [Path(p) for p in (exclude_dirs or [])]
+        files = cls._collect_matching_files(folder_path, included_file_extensions, recursive=recursive, exclude_dirs=exclude_list)
 
         if not files:
             # No files found - return empty DataFrame and clear cache if it exists
@@ -292,4 +350,4 @@ class BaseFileMetadataParser:
 
 _duration_seconds_safe_for_timedelta = BaseFileMetadataParser._duration_seconds_safe_for_timedelta
 
-__all__ = ['BaseFileMetadataParser']
+__all__ = ['BaseFileMetadataParser', 'DUP_DIR_NAME']

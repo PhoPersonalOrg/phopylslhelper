@@ -132,7 +132,7 @@ class VideoMetadataParser(BaseFileMetadataParser):
 
 
     @classmethod
-    def parse_video_folder(cls, folder_path: Path, video_extensions: List[str] = ['.mp4', '.avi', '.mov', '.mkv', '.wmv'], use_cache: bool = True, force_rebuild: bool = False) -> pd.DataFrame:
+    def parse_video_folder(cls, folder_path: Path, video_extensions: List[str] = ['.mp4', '.avi', '.mov', '.mkv', '.wmv'], use_cache: bool = True, force_rebuild: bool = False, recursive: bool = False, exclude_dirs: Optional[List[Path]] = None) -> pd.DataFrame:
         """
         Parse all videos in a folder and return a DataFrame with metadata.
         Uses caching to speed up subsequent runs by only processing new or modified videos.
@@ -142,6 +142,8 @@ class VideoMetadataParser(BaseFileMetadataParser):
             video_extensions: List of video file extensions to process
             use_cache: If True, use cached metadata for unchanged videos (default: True)
             force_rebuild: If True, ignore cache and rebuild from scratch (default: False)
+            recursive: If True, search with rglob; otherwise only the folder itself
+            exclude_dirs: Optional directories to skip (also always skips path segments named ``_DUP``)
 
         Returns:
             DataFrame with columns:
@@ -159,7 +161,7 @@ class VideoMetadataParser(BaseFileMetadataParser):
 
         DataFrame is sorted by video_start_datetime.
         """
-        return cls.parse_filesystem_folder(folder_path, included_file_extensions=video_extensions, use_cache=use_cache, force_rebuild=force_rebuild, cache_filename="_video_metadata_cache.csv", path_column="video_file_path", start_datetime_column="video_start_datetime", end_datetime_column="video_end_datetime", duration_metadata_key="video_duration")
+        return cls.parse_filesystem_folder(folder_path, included_file_extensions=video_extensions, use_cache=use_cache, force_rebuild=force_rebuild, cache_filename="_video_metadata_cache.csv", path_column="video_file_path", start_datetime_column="video_start_datetime", end_datetime_column="video_end_datetime", duration_metadata_key="video_duration", recursive=recursive, exclude_dirs=exclude_dirs)
 
 
 __all__ = ['VideoMetadataParser']
